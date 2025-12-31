@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>超級扭蛋分組機 - 可調整版</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --bg: #0a0a1a;
+            --container-bg: #1a1a2e;
+            --text: #ffffff;
+            --accent: #ff007a;
+            --globe-border: rgba(255, 255, 255, 0.3);
+            --globe-glass: rgba(255, 255, 255, 0.1);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%);
+            color: var(--text);
+            margin: 0; padding: 10px; /* 邊距稍微縮小 */
+            display: flex; height: 100vh; overflow: hidden;
+        }
+
+        /* 拖曳時禁止選取文字，避免干擾體驗 */
+        body.resizing {
+            cursor: col-resize;
+            user-select: none;
+        }
+
+        /* === 左側控制區 === */
+        /* 改用 flex-basis 控制寬度，預設縮窄至 240px */
+        .sidebar {
+            width: 240px; 
+            min-width: 180px; /* 最小寬度 */
+            max-width: 500px; /* 最大寬度 */
+            flex-shrink: 0;   /* 禁止被壓縮 */
+            background: var(--container-bg); padding: 20px;
+            border-radius: 20px; display: flex; flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); z-index: 20;
+        }
+        h2, h3 { margin-top: 0; color: #a5b4fc; text-shadow: 0 0 10px rgba(165, 180, 252, 0.5); font-size: 1.2rem;}
+        textarea {
+            flex: 1; background: #0a0a1a; border: 2px solid #444; color: #fff;
+            padding: 15px; border-radius: 12px; resize: none; font-size: 14px; margin-bottom: 15px;
+            transition: border 0.3s;
+        }
+        textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 15px rgba(79, 70, 229, 0.3); }
+        button {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border: none; padding: 15px; color: white; border-radius: 12px;
+            font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s;
+            margin-bottom: 10px; box-shadow: 0 4px 15px rgba(255, 0, 122, 0.4);
+        }
+        button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 0, 122, 0.6); }
+        button:active:not(:disabled) { transform: scale(0.95); }
+        button.reset { background: linear-gradient(135deg, #4b5563, #6b7280); font-size: 14px; padding: 10px; box-shadow: 0 4px 15px rgba(75, 85, 99, 0.4); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+
+        /* === 拖曳手把 Resizer === */
+        .resizer {
+            width: 10px;
+            cursor: col-resize;
+            background: transparent;
+            z-index: 50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background 0.3s;
+            flex-shrink: 0;
+        }
+        /* 手把中心線 */
+        .resizer::after {
+            content: '';
+            width: 2px;
+            height: 40px;
+            background: #444;
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+        .resizer:hover::after, .resizer.active::after {
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+            height: 100%; /* 互動時線條拉長 */
+        }
+
+        /* === 中間動畫區 === */
+        .stage {
+            flex: 1; /* 佔據剩餘空間 */
+            position: relative; 
+            /* 移除左右 margin，改由 resizer 提供間隔 */
+            background: radial-gradient(circle at center bottom, #2a2a5a 0%, #0a0a1a 70%);
+            border-radius: 20px; border: 2px solid rgba(255,255,255,0.1);
+            overflow: hidden; display: flex; flex-direction: column;
+            padding: 20px; box-shadow: inset 0 0 80px rgba(0,0,0,0.8);
+            min-width: 300px; /* 確保中間不會被壓到不見 */
+        }
+
+        /* === 扭蛋機結構 === */
+        .gacha-container {
+            position: relative;
+            width: 300px; height: 300px;
+            margin: 20px auto 40px; 
+            z-index: 10;
+        }
+        .gacha-globe {
+            width: 100%; height: 100%; border-radius: 50%;
+            background: radial-gradient(circle at 70% 30%, var(--globe-glass), rgba(255,255,255,0.02) 60%, transparent);
+            border: 6px solid var(--globe-border);
+            box-shadow: inset 0 0 40px rgba(255,255,255,0.2), 0 20px 50px rgba(0,0,0,0.6);
+            position: relative; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .gacha-globe::after {
+            content: ''; position: absolute; top: 30px; left: 40px;
+            width: 80px; height: 40px; background: rgba(255,255,255,0.5);
+            border-radius: 50%; transform: rotate(-35deg); pointer-events: none;
+        }
+        .gacha-exit-port {
+            position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+            width: 100px; height: 30px; background: #333;
+            border-radius: 0 0 20px 20px; border: 4px solid #555; border-top: none;
+        }
+
+        .mini-ball {
+            position: absolute; width: 36px; height: 36px; border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff, var(--ball-color));
+            box-shadow: inset 0 -2px 5px rgba(0,0,0,0.3);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 10px; color: #000; font-weight: bold; overflow: hidden; white-space: nowrap;
+            transition: all 0.5s ease-out;
+        }
+        @keyframes mixBalls {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(20px, -30px) rotate(90deg); }
+            50% { transform: translate(-15px, 10px) rotate(180deg); }
+            75% { transform: translate(10px, 25px) rotate(270deg); }
+            100% { transform: translate(0, 0) rotate(360deg); }
+        }
+        .gacha-globe.mixing .mini-ball {
+            animation: mixBalls 0.8s infinite linear alternate;
+        }
+
+        /* 容器區域 (桶子) */
+        .bins-wrapper { flex: 1; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 60px; }
+        .bins-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 50px 20px; max-width: 100%; }
+        .bin {
+            width: 100px; height: 220px; 
+            border: 3px solid #666; border-top: none;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.02), rgba(255,255,255,0.1));
+            border-radius: 0 0 15px 15px; position: relative; display: flex;
+            flex-direction: column-reverse; align-items: center; padding-bottom: 10px;
+            box-shadow: inset 0 -5px 20px rgba(255,255,255,0.1), 0 10px 20px rgba(0,0,0,0.3);
+        }
+        .bin-label {
+            position: absolute; bottom: -45px; width: 120%; text-align: center;
+            font-weight: bold; font-size: 16px; color: #fff;
+            text-shadow: 0 2px 4px rgba(0,0,0,1); background: rgba(0,0,0,0.5);
+            padding: 4px 8px; border-radius: 8px; left: 50%; transform: translateX(-50%);
+        }
+
+        /* 飛行球 */
+        .ball {
+            width: 70px; height: 70px; border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff, red);
+            position: absolute;
+            top: 300px; left: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 16px; font-weight: bold; color: #000;
+            z-index: 30; opacity: 0;
+        }
+        .ball.flying {
+            opacity: 1;
+            animation: rotateBall 0.8s linear infinite;
+            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 
+                0 0 20px rgba(255, 255, 255, 1),
+                -10px -20px 30px rgba(var(--trail-color-rgb), 0.8),
+                -25px -40px 60px rgba(var(--trail-color-rgb), 0.4),
+                inset 0 -5px 10px rgba(0,0,0,0.5);
+        }
+        @keyframes rotateBall { to { transform: rotate(720deg); } }
+
+        .ball-in-bin {
+            width: 60px; height: 60px; font-size: 14px; margin: 3px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            animation: landBounce 0.5s ease-out;
+            flex-shrink: 0;
+        }
+        @keyframes landBounce {
+            0% { transform: scale(1.2); } 60% { transform: scale(0.9); } 100% { transform: scale(1); }
+        }
+
+        /* === 右側結果區 === */
+        /* 改用 flex-basis 控制寬度，預設縮窄至 240px */
+        .results {
+            width: 240px; 
+            min-width: 180px; 
+            max-width: 500px;
+            flex-shrink: 0;
+            background: var(--container-bg); padding: 20px;
+            border-radius: 20px; display: flex; flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); z-index: 20;
+        }
+        .result-list {
+            flex: 1; overflow-y: auto; background: #0a0a1a; padding: 15px;
+            border-radius: 12px; font-family: 'Courier New', monospace; font-size: 14px;
+            white-space: pre; color: #ddd; border: 2px solid #333; line-height: 1.6;
+        }
+        .copy-btn { margin-top: 15px; background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); }
+        .copy-btn:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6); }
+        .loading {
+            display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%; border-top-color: #fff; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .countdown {
+            position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 150px; font-weight: bold; color: #fff;
+            text-shadow: 0 0 50px var(--accent); z-index: 100; pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar" id="leftPanel">
+        <h3>🎱 扭蛋名單輸入</h3>
+        <textarea id="inputNames" placeholder="張三&#10;李四&#10;王五&#10;..."></textarea>
+        <button id="startBtn" onclick="startGacha()">🎰 啟動扭蛋機！</button>
+        <button class="reset" onclick="location.reload()">🔄 重置系統</button>
+    </div>
+
+    <div class="resizer" id="resizerLeft"></div>
+
+    <div class="stage" id="stage">
+        <div class="gacha-container">
+            <div class="gacha-globe" id="gachaGlobe"></div>
+            <div class="gacha-exit-port"></div>
+        </div>
+
+        <div class="bins-wrapper">
+            <div class="bins-container" id="binsContainer"></div>
+        </div>
+    </div>
+
+    <div class="resizer" id="resizerRight"></div>
+
+    <div class="results" id="rightPanel">
+        <h3>📊 分組結果</h3>
+        <div class="result-list" id="resultOutput" style="display:flex;justify-content:center;align-items:center;color:#888;">
+            <span>準備扭蛋...</span>
+        </div>
+        <button class="copy-btn" id="copyBtn" onclick="copyResult()" disabled>📋 複製結果</button>
+    </div>
+
+    <script>
+        const colors = [
+            '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', 
+            '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e'
+        ];
+        
+        // === 音效設定區 ===
+        const sfxMix = new Audio('sounds/mix.mp3'); 
+        const sfxEject = new Audio('sounds/eject.mp3');   
+        const sfxComplete = new Audio('sounds/complete.mp3'); 
+        sfxMix.loop = true;
+        
+        const sfxLands = [];
+        for (let i = 1; i <= 7; i++) {
+            sfxLands.push(new Audio(`sounds/land${i}.mp3`));
+        }       
+
+        function playSound(audio) {
+            audio.currentTime = 0;
+            audio.play().catch(e => console.log('音效播放失敗:', e));
+        }
+        function stopSound(audio) {
+            audio.pause();
+            audio.currentTime = 0;
+        }
+
+        // === 拖曳調整寬度功能 ===
+        const makeResizable = (resizer, targetPanel, isLeft) => {
+            resizer.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                document.body.classList.add('resizing');
+                resizer.classList.add('active');
+
+                const startX = e.clientX;
+                const startWidth = targetPanel.getBoundingClientRect().width;
+
+                const onMouseMove = (moveEvent) => {
+                    let newWidth;
+                    if (isLeft) {
+                        // 左側：滑鼠往右移動，寬度增加
+                        newWidth = startWidth + (moveEvent.clientX - startX);
+                    } else {
+                        // 右側：滑鼠往左移動，寬度增加 (因為是 flex 右側項目，視覺上往左拉是變大)
+                        // 計算邏輯：起始寬度 + (起始X - 目前X)
+                        newWidth = startWidth + (startX - moveEvent.clientX);
+                    }
+                    targetPanel.style.width = `${newWidth}px`;
+                };
+
+                const onMouseUp = () => {
+                    document.body.classList.remove('resizing');
+                    resizer.classList.remove('active');
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+                };
+
+                window.addEventListener('mousemove', onMouseMove);
+                window.addEventListener('mouseup', onMouseUp);
+            });
+        };
+
+        // 初始化拖曳功能
+        makeResizable(document.getElementById('resizerLeft'), document.getElementById('leftPanel'), true);
+        makeResizable(document.getElementById('resizerRight'), document.getElementById('rightPanel'), false);
+
+
+        // === 扭蛋機核心邏輯 (維持不變) ===
+        let isAnimating = false;
+        let miniBalls = []; 
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function hexToRgb(hex) {
+            const bigint = parseInt(hex.slice(1), 16);
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+            return `${r}, ${g}, ${b}`;
+        }
+
+        function showCountdown(callback) {
+            const stage = document.getElementById('stage');
+            const numbers = ['3', '2', '1'];
+            let index = 0;
+            playSound(sfxMix);
+            document.getElementById('gachaGlobe').classList.add('mixing');
+
+            function showNext() {
+                if (index >= numbers.length) {
+                    stage.querySelector('.countdown')?.remove();
+                    callback();
+                    return;
+                }
+                stage.querySelector('.countdown')?.remove();
+                const div = document.createElement('div');
+                div.className = 'countdown';
+                div.innerText = numbers[index];
+                div.style.animation = 'pulse 0.8s ease-out';
+                stage.appendChild(div);
+                index++;
+                setTimeout(showNext, 1000);
+            }
+            showNext();
+        }
+
+        const styleSheet = document.styleSheets[0];
+        styleSheet.insertRule(`
+            @keyframes pulse {
+                0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+                50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+                100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+            }
+        `, styleSheet.cssRules.length);
+
+        function startGacha() {
+            if (isAnimating) return;
+            const rawText = document.getElementById('inputNames').value;
+            let names = rawText.split('\n').map(n => n.trim()).filter(n => n);
+            if (names.length < 3) { alert("人數太少，至少需要 3 人！"); return; }
+            isAnimating = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('copyBtn').disabled = true;
+            document.getElementById('resultOutput').innerHTML = '<div class="loading"></div><span style="margin-left:10px;">扭蛋機運作中...</span>';
+            document.getElementById('resultOutput').style.display = 'block';
+
+            names = shuffle(names);
+            const totalGroups = Math.ceil(names.length / 3);
+            setupBins(totalGroups);
+            fillGachaGlobe(names);
+
+            let groups = Array.from({length: totalGroups}, () => []);
+            names.forEach((name, index) => {
+                groups[index % totalGroups].push(name);
+            });
+
+            let animQueue = [];
+            groups.forEach((group, gIndex) => {
+                group.forEach(name => {
+                    animQueue.push({ name: name, groupIndex: gIndex });
+                });
+            });
+            animQueue = shuffle(animQueue);
+
+            showCountdown(() => {
+                stopSound(sfxMix);
+                document.getElementById('gachaGlobe').classList.remove('mixing');
+                animQueue.forEach((item, i) => {
+                    setTimeout(() => {
+                        ejectBall(item.name, item.groupIndex);
+                    }, i * 800);
+                });
+                const totalTime = animQueue.length * 800 + 1200;
+                setTimeout(() => {
+                    finalizeResults(groups);
+                }, totalTime);
+            });
+        }
+
+        function setupBins(count) {
+            const container = document.getElementById('binsContainer');
+            container.innerHTML = '';
+            for(let i=0; i<count; i++) {
+                const bin = document.createElement('div');
+                bin.className = 'bin'; bin.id = `bin-${i}`;
+                bin.style.borderColor = colors[i % colors.length];
+                const label = document.createElement('div');
+                label.className = 'bin-label';
+                label.innerText = `${i+1} 組`;
+                bin.appendChild(label);
+                container.appendChild(bin);
+            }
+        }
+
+        function fillGachaGlobe(names) {
+            const globe = document.getElementById('gachaGlobe');
+            globe.innerHTML = '';
+            miniBalls = [];
+            names.forEach((name, i) => {
+                const mini = document.createElement('div');
+                mini.className = 'mini-ball';
+                mini.innerText = name;
+                const color = colors[i % colors.length];
+                mini.style.setProperty('--ball-color', color);
+                const left = Math.random() * 70 + 15;
+                const top = Math.random() * 70 + 15;
+                mini.style.left = `${left}%`;
+                mini.style.top = `${top}%`;
+                globe.appendChild(mini);
+                miniBalls.push(mini);
+            });
+        }
+
+        function ejectBall(name, groupIndex) {
+            const stage = document.getElementById('stage');
+            const globe = document.getElementById('gachaGlobe');
+            const bin = document.getElementById(`bin-${groupIndex}`);
+            const colorHex = colors[groupIndex % colors.length];
+            
+            if (miniBalls.length > 0) {
+                const miniToRemove = miniBalls.pop();
+                miniToRemove.style.opacity = '0';
+                setTimeout(() => miniToRemove.remove(), 300);
+            }
+
+            const ball = document.createElement('div');
+            ball.className = 'ball';
+            ball.innerText = name;
+            ball.style.background = `radial-gradient(circle at 30% 30%, #fff, ${colorHex})`;
+            ball.style.setProperty('--trail-color-rgb', hexToRgb(colorHex));
+            stage.appendChild(ball);
+
+            const stageRect = stage.getBoundingClientRect();
+            const globeRect = globe.getBoundingClientRect();
+            const binRect = bin.getBoundingClientRect();
+
+            const startLeft = (globeRect.left - stageRect.left) + globeRect.width / 2 - 35;
+            const startTop = (globeRect.bottom - stageRect.top) - 20;
+            const targetLeft = (binRect.left - stageRect.left) + binRect.width / 2 - 35;
+            const targetTop = (binRect.top - stageRect.top) - 80;
+
+            ball.style.left = `${startLeft}px`;
+            ball.style.top = `${startTop}px`;
+
+            playSound(sfxEject);
+
+            requestAnimationFrame(() => {
+                ball.classList.add('flying');
+                ball.style.left = `${targetLeft}px`;
+                ball.style.top = `${targetTop}px`;
+            });
+
+            setTimeout(() => {
+                ball.remove();
+                const randomLand = sfxLands[Math.floor(Math.random() * sfxLands.length)];
+                playSound(randomLand);
+                const ballInBin = document.createElement('div');
+                ballInBin.className = 'ball ball-in-bin';
+                ballInBin.innerText = name;
+                ballInBin.style.position = 'relative';
+                ballInBin.style.top = '0'; ballInBin.style.left = '0'; ballInBin.style.opacity = '1';
+                ballInBin.style.background = `radial-gradient(circle at 30% 30%, #fff, ${colorHex})`;
+                bin.appendChild(ballInBin);
+            }, 800);
+        }
+
+        function finalizeResults(groups) {
+            playSound(sfxComplete);
+            let resultText = "組別\t姓名\n";
+            groups.forEach((group, gIndex) => {
+                group.forEach(name => {
+                    resultText += `${gIndex + 1}組\t${name}\n`;
+                });
+            });
+            const output = document.getElementById('resultOutput');
+            output.style.display = 'block';
+            output.innerText = resultText;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('copyBtn').disabled = false;
+            isAnimating = false;
+            document.querySelectorAll('.bin').forEach(bin => {
+                bin.style.animation = 'landBounce 0.5s ease-out';
+            });
+        }
+
+        function copyResult() {
+            const text = document.getElementById('resultOutput').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ 已複製！請貼到 Google Sheet');
+            });
+        }
+    </script>
+</body>
+</html>
