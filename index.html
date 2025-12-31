@@ -512,7 +512,7 @@
             let resultText = "組別\t姓名\n";
             groups.forEach((group, gIndex) => {
                 group.forEach(name => {
-                    resultText += `${gIndex + 1}組\t${name}\n`;
+                    resultText += `第${gIndex + 1}組\t${name}\n`;
                 });
             });
             const output = document.getElementById('resultOutput');
@@ -536,5 +536,6 @@
 </body>
 
 </html>
+
 
 
