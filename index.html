@@ -263,14 +263,14 @@
         ];
         
         // === 音效設定區 ===
-        const sfxMix = new Audio('sounds/mix.mp3'); 
-        const sfxEject = new Audio('sounds/eject.mp3');   
-        const sfxComplete = new Audio('sounds/complete.mp3'); 
+        const sfxMix = new Audio('sound/mix.mp3'); 
+        const sfxEject = new Audio('sound/eject.mp3');   
+        const sfxComplete = new Audio('sound/complete.mp3'); 
         sfxMix.loop = true;
         
         const sfxLands = [];
         for (let i = 1; i <= 7; i++) {
-            sfxLands.push(new Audio(`sounds/land${i}.mp3`));
+            sfxLands.push(new Audio(`sound/land${i}.mp3`));
         }       
 
         function playSound(audio) {
@@ -536,3 +536,4 @@
 </body>
 
 </html>
+
