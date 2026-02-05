@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新春開運・扭蛋分組機</title>
+    <meta property="og:title" content="新春開運・扭蛋分組機 🧧">
+    <meta property="og:description" content="新春喜慶分組工具！輸入名單自動隨機分組，每組保證有人帶動氣氛！">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --gold: #FFD700;
+            --gold-dark: #B8860B;
+            --red: #C41E3A;
+            --red-dark: #8B0000;
+            --red-light: #FF4D4D;
+            --cream: #FFF8DC;
+            --black: #1a0a0a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, var(--red-dark) 0%, var(--red) 50%, #8B0000 100%);
+            color: var(--cream);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 祥雲底紋 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='rgba(255,215,0,0.03)' d='M20,50 Q30,30 50,40 T80,50 Q70,70 50,60 T20,50Z'/%3E%3C/svg%3E");
+            background-size: 150px 150px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body.resizing {
+            cursor: col-resize;
+            user-select: none;
+        }
+
+        /* === 燈籠裝飾 === */
+        .lantern-deco {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 50px;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        .lantern {
+            width: 25px;
+            height: 35px;
+            background: linear-gradient(180deg, #FF6B6B, var(--red));
+            border-radius: 50% 50% 45% 45%;
+            position: relative;
+            animation: swing 3s ease-in-out infinite;
+            box-shadow: 0 5px 15px rgba(255, 0, 0, 0.4);
+        }
+
+        .lantern::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 6px;
+            background: var(--gold);
+            border-radius: 2px;
+        }
+
+        .lantern::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 10px;
+            background: var(--gold);
+        }
+
+        @keyframes swing {
+
+            0%,
+            100% {
+                transform: rotate(-5deg);
+            }
+
+            50% {
+                transform: rotate(5deg);
+            }
+        }
+
+        .sidebar {
+            width: 260px;
+            min-width: 200px;
+            max-width: 500px;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, rgba(26, 10, 10, 0.95) 0%, rgba(50, 20, 20, 0.95) 100%);
+            padding: 20px;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--gold);
+            z-index: 20;
+            position: relative;
+        }
+
+        h2,
+        h3 {
+            margin-top: 0;
+            color: var(--gold);
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            font-size: 1.2rem;
+            font-family: 'Noto Serif TC', serif;
+        }
+
+        .input-hint {
+            font-size: 12px;
+            color: var(--cream);
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid var(--gold);
+            line-height: 1.6;
+        }
+
+        .input-hint code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        textarea {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--gold-dark);
+            color: var(--cream);
+            padding: 15px;
+            border-radius: 12px;
+            resize: none;
+            font-size: 14px;
+            margin-bottom: 15px;
+            transition: border 0.3s;
+            font-family: 'Courier New', monospace;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+
+        textarea::placeholder {
+            color: rgba(255, 248, 220, 0.4);
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+            border: none;
+            padding: 15px;
+            color: var(--red-dark);
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
+        }
+
+        button:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+
+        button.reset {
+            background: linear-gradient(135deg, #4b5563, #6b7280);
+            font-size: 14px;
+            padding: 10px;
+            box-shadow: 0 4px 15px rgba(75, 85, 99, 0.4);
+            color: #fff;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(0.5);
+        }
+
+        .resizer {
+            width: 10px;
+            cursor: col-resize;
+            background: transparent;
+            z-index: 50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background 0.3s;
+            flex-shrink: 0;
+        }
+
+        .resizer::after {
+            content: '';
+            width: 2px;
+            height: 40px;
+            background: var(--gold-dark);
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+
+        .resizer:hover::after,
+        .resizer.active::after {
+            background: var(--gold);
+            box-shadow: 0 0 10px var(--gold);
+            height: 100%;
+        }
+
+        .stage {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(circle at center 70%, rgba(139, 0, 0, 0.8) 0%, rgba(100, 0, 0, 0.6) 50%, rgba(50, 0, 0, 0.9) 100%);
+            border-radius: 20px;
+            border: 2px solid var(--gold);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.5);
+            min-width: 400px;
+        }
+
+        /* === 聚寶盆造型 === */
+        .gacha-container {
+            position: relative;
+            width: clamp(220px, 30vw, 400px);
+            height: clamp(180px, 25vw, 320px);
+            margin: 10px auto 20px;
+            z-index: 10;
+        }
+
+        .treasure-pot {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 盆身 */
+        .pot-body {
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 65%;
+            background: linear-gradient(180deg, #FFE55C 0%, var(--gold) 30%, var(--gold-dark) 100%);
+            border-radius: 50% 50% 40% 40% / 30% 30% 50% 50%;
+            box-shadow:
+                inset 0 20px 40px rgba(255, 255, 255, 0.4),
+                inset 0 -20px 30px rgba(0, 0, 0, 0.3),
+                0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-end;
+            padding: 10%;
+            padding-bottom: 15%;
+        }
+
+        /* 盆口光暈 */
+        .pot-body::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: 10%;
+            right: 10%;
+            height: 15px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+            border-radius: 50%;
+        }
+
+        /* 底座 */
+        .pot-base {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50%;
+            height: 12%;
+            background: linear-gradient(180deg, var(--gold-dark) 0%, #8B6914 100%);
+            border-radius: 5px 5px 10px 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        /* 金光效果 */
+        .pot-glow {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 60px;
+            background: radial-gradient(ellipse, rgba(255, 215, 0, 0.4) 0%, transparent 70%);
+            animation: glowPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+
+            0%,
+            100% {
+                opacity: 0.5;
+                transform: translateX(-50%) scale(1);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translateX(-50%) scale(1.1);
+            }
+        }
+
+        /* 金幣/元寶小球 */
+        .mini-coin {
+            position: absolute;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FFE55C 0%, var(--gold) 50%, var(--gold-dark) 100%);
+            box-shadow:
+                inset 2px 2px 4px rgba(255, 255, 255, 0.5),
+                inset -2px -2px 4px rgba(0, 0, 0, 0.2),
+                0 2px 5px rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            color: var(--red-dark);
+            font-weight: bold;
+            overflow: hidden;
+            white-space: nowrap;
+            transition: all 0.5s ease-out;
+        }
+
+        .mini-coin::before {
+            content: '¥';
+            position: absolute;
+            font-size: 14px;
+            color: rgba(139, 0, 0, 0.3);
+        }
+
+        @keyframes mixCoins {
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+
+            25% {
+                transform: translate(15px, -20px) rotate(90deg);
+            }
+
+            50% {
+                transform: translate(-10px, 5px) rotate(180deg);
+            }
+
+            75% {
+                transform: translate(8px, 15px) rotate(270deg);
+            }
+
+            100% {
+                transform: translate(0, 0) rotate(360deg);
+            }
+        }
+
+        .pot-body.mixing .mini-coin {
+            animation: mixCoins 0.6s infinite linear alternate;
+        }
+
+        /* === 紅包袋收集箱 === */
+        .bins-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 40px;
+        }
+
+        .bins-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 40px 15px;
+            max-width: 100%;
+        }
+
+        .bin {
+            width: 110px;
+            height: 280px;
+            background: linear-gradient(180deg, #FF4444 0%, var(--red) 50%, var(--red-dark) 100%);
+            border-radius: 8px 8px 5px 5px;
+            position: relative;
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            padding: 10px;
+            padding-bottom: 15px;
+            box-shadow:
+                inset 0 5px 15px rgba(255, 255, 255, 0.2),
+                0 8px 20px rgba(0, 0, 0, 0.4);
+            border: 2px solid var(--gold);
+        }
+
+        /* 紅包袋金色封口 */
+        .bin::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 25px;
+            background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dark) 100%);
+            border-radius: 6px 6px 0 0;
+        }
+
+        /* 福字在金色封口上 */
+        .bin::after {
+            content: '福';
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 16px;
+            font-family: 'Noto Serif TC', serif;
+            font-weight: 900;
+            color: var(--red-dark);
+            z-index: 5;
+        }
+
+        .bin-label {
+            position: absolute;
+            bottom: -35px;
+            width: 100%;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            color: var(--gold);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        /* === 飛行中的金幣 === */
+        .ball {
+            width: 95px;
+            height: 95px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FFE55C 0%, var(--gold) 50%, var(--gold-dark) 100%);
+            position: absolute;
+            top: 200px;
+            left: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--red-dark);
+            z-index: 30;
+            opacity: 0;
+            box-shadow:
+                inset 3px 3px 6px rgba(255, 255, 255, 0.5),
+                inset -3px -3px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .ball.flying {
+            opacity: 1;
+            animation: rotateBall 0.6s linear infinite;
+            transition: all 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow:
+                0 0 30px rgba(255, 215, 0, 0.8),
+                0 0 60px rgba(255, 215, 0, 0.4),
+                inset 3px 3px 6px rgba(255, 255, 255, 0.5);
+        }
+
+        @keyframes rotateBall {
+            to {
+                transform: rotate(720deg);
+            }
+        }
+
+        /* 落入紅包袋的金幣 */
+        .ball-in-bin {
+            width: 85px;
+            height: 85px;
+            font-size: 20px;
+            margin: 4px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+            animation: landBounce 0.5s ease-out;
+            flex-shrink: 0;
+            position: relative;
+            top: auto;
+            left: auto;
+            opacity: 1;
+        }
+
+        @keyframes landBounce {
+            0% {
+                transform: scale(1.3);
+            }
+
+            60% {
+                transform: scale(0.9);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* === 結果面板 === */
+        .results {
+            width: 260px;
+            min-width: 200px;
+            max-width: 500px;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, rgba(26, 10, 10, 0.95) 0%, rgba(50, 20, 20, 0.95) 100%);
+            padding: 20px;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--gold);
+            z-index: 20;
+            position: relative;
+        }
+
+        .result-list {
+            flex: 1;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre;
+            color: var(--cream);
+            border: 2px solid var(--gold-dark);
+            line-height: 1.6;
+        }
+
+        .copy-btn {
+            margin-top: 15px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+            color: #fff;
+        }
+
+        .copy-btn:hover:not(:disabled) {
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 215, 0, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--gold);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* === 倒數字 === */
+        .countdown {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 120px;
+            font-weight: 900;
+            color: var(--gold);
+            font-family: 'Noto Serif TC', serif;
+            text-shadow: 0 0 50px var(--gold), 0 0 100px rgba(255, 215, 0, 0.5);
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 0;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0;
+            }
+        }
+
+        /* === 完成煙花 === */
+        .firework {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: fireworkExplode 1s ease-out forwards;
+        }
+
+        @keyframes fireworkExplode {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(0);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 燈籠裝飾 -->
+    <div class="lantern-deco">
+        <div class="lantern"></div>
+        <div class="lantern" style="animation-delay: 0.3s;"></div>
+        <div class="lantern" style="animation-delay: 0.6s;"></div>
+        <div class="lantern" style="animation-delay: 0.2s;"></div>
+        <div class="lantern" style="animation-delay: 0.5s;"></div>
+        <div class="lantern" style="animation-delay: 0.8s;"></div>
+        <div class="lantern" style="animation-delay: 0.4s;"></div>
+    </div>
+
+    <div class="sidebar" id="leftPanel">
+        <h3>🧧 新春分組名單</h3>
+        <div class="input-hint">
+            📝 格式：<code>小C</code> <code>姓名</code> <code>聘階</code><br>
+            以空格或 Tab 分隔，例如：<br>
+            <code>秋霞小C 張三 EC</code><br>
+            <code>華正小C 李四 UFO</code>
+        </div>
+        <textarea id="inputNames" placeholder="秋霞小C&#9;張三&#9;EC&#10;華正小C&#9;李四&#9;UFO&#10;..."></textarea>
+        <button id="startBtn" onclick="startGacha()">🎰 開運分組！</button>
+        <button class="reset" onclick="location.reload()">🔄 重置</button>
+    </div>
+
+    <div class="resizer" id="resizerLeft"></div>
+
+    <div class="stage" id="stage">
+        <div class="gacha-container">
+            <div class="treasure-pot">
+                <div class="pot-glow"></div>
+                <div class="pot-body" id="potBody"></div>
+                <div class="pot-base"></div>
+            </div>
+        </div>
+
+        <div class="bins-wrapper">
+            <div class="bins-container" id="binsContainer"></div>
+        </div>
+    </div>
+
+    <div class="resizer" id="resizerRight"></div>
+
+    <div class="results" id="rightPanel">
+        <h3>📊 分組結果</h3>
+        <div class="result-list" id="resultOutput"
+            style="display:flex;justify-content:center;align-items:center;color:rgba(255,248,220,0.5);">
+            <span>等待分組...</span>
+        </div>
+        <button class="copy-btn" id="copyBtn" onclick="copyResult()" disabled>📋 複製結果</button>
+    </div>
+
+    <script>
+        const colors = [
+            '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981',
+            '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e'
+        ];
+
+        // 音效定義
+        const sounds = {
+            start: new Audio('mp3/start.mp3'),
+            complete: new Audio('mp3/complete.MP3'),
+            fire: [
+                'mp3/fire1.mp3',
+                'mp3/fire2.mp3',
+                'mp3/fire3.mp3',
+                'mp3/fire4.mp3',
+                'mp3/fire5.mp3',
+                'mp3/fire6.mp3'
+            ]
+        };
+
+        // 播放音效輔助函式 (支援重疊播放)
+        function playSound(soundKey) {
+            if (soundKey === 'fire') {
+                const randomFire = sounds.fire[Math.floor(Math.random() * sounds.fire.length)];
+                const audio = new Audio(randomFire);
+                audio.play();
+            } else if (sounds[soundKey]) {
+                sounds[soundKey].currentTime = 0;
+                sounds[soundKey].play();
+            }
+        }
+
+
+
+        // 拖曳調整面板寬度
+        const makeResizable = (resizer, targetPanel, isLeft) => {
+            resizer.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                document.body.classList.add('resizing');
+                resizer.classList.add('active');
+
+                const startX = e.clientX;
+                const startWidth = targetPanel.getBoundingClientRect().width;
+
+                const onMouseMove = (moveEvent) => {
+                    let newWidth;
+                    if (isLeft) {
+                        newWidth = startWidth + (moveEvent.clientX - startX);
+                    } else {
+                        newWidth = startWidth + (startX - moveEvent.clientX);
+                    }
+                    targetPanel.style.width = `${newWidth}px`;
+                };
+
+                const onMouseUp = () => {
+                    document.body.classList.remove('resizing');
+                    resizer.classList.remove('active');
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+                };
+
+                window.addEventListener('mousemove', onMouseMove);
+                window.addEventListener('mouseup', onMouseUp);
+            });
+        };
+
+        makeResizable(document.getElementById('resizerLeft'), document.getElementById('leftPanel'), true);
+        makeResizable(document.getElementById('resizerRight'), document.getElementById('rightPanel'), false);
+
+        let isAnimating = false;
+        let miniCoins = [];
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function showCountdown(callback) {
+            const stage = document.getElementById('stage');
+            const numbers = ['3', '2', '1'];
+            let index = 0;
+
+            document.getElementById('potBody').classList.add('mixing');
+
+            function showNext() {
+                if (index >= numbers.length) {
+                    stage.querySelector('.countdown')?.remove();
+                    callback();
+                    return;
+                }
+                stage.querySelector('.countdown')?.remove();
+                const div = document.createElement('div');
+                div.className = 'countdown';
+                div.innerText = numbers[index];
+                div.style.animation = 'pulse 0.8s ease-out';
+                stage.appendChild(div);
+                index++;
+                setTimeout(showNext, 1000);
+            }
+            showNext();
+        }
+
+        // === 核心：智能分組演算法 ===
+        // 1. 每組最多 3 人
+        // 2. 非 UFO 平均分散（確保每組有人帶動）
+        // 3. 同小C不同組
+        // 4. UFO 填補剩餘位置
+        function smartGrouping(people, totalGroups) {
+            const MAX_PER_GROUP = 3;
+
+            // 分類：領導 (含 "EC") vs 其他
+            const leaders = people.filter(p => p.rank.includes('EC'));
+            const others = people.filter(p => !p.rank.includes('EC'));
+
+            // 初始化分組
+            const groups = Array.from({ length: totalGroups }, () => []);
+            const groupCategoryCount = Array.from({ length: totalGroups }, () => ({}));
+
+            // 打亂名單
+            shuffle(leaders);
+            shuffle(others);
+
+            // 輔助函數：找最佳組別（未滿且同小C最少）
+            function findBestGroup(person) {
+                let bestGroupIndex = -1;
+                let minCatCount = Infinity;
+                let minSize = Infinity;
+
+                for (let i = 0; i < totalGroups; i++) {
+                    // 跳過已滿的組
+                    if (groups[i].length >= MAX_PER_GROUP) continue;
+
+                    const catCount = groupCategoryCount[i][person.category] || 0;
+                    const groupSize = groups[i].length;
+
+                    if (catCount < minCatCount || (catCount === minCatCount && groupSize < minSize)) {
+                        bestGroupIndex = i;
+                        minCatCount = catCount;
+                        minSize = groupSize;
+                    }
+                }
+                return bestGroupIndex;
+            }
+
+            // 第一輪：分配領導者（確保每組至少有一個，若足夠的話）
+            for (let i = 0; i < leaders.length; i++) {
+                const person = leaders[i];
+                // 優先找還沒有領導者的組，或者找同小C最少的組
+                let bestIdx = -1;
+                let minLeadersInGroup = Infinity;
+
+                for (let j = 0; j < totalGroups; j++) {
+                    if (groups[j].length >= MAX_PER_GROUP) continue;
+
+                    const leaderCountInGroup = groups[j].filter(p => p.rank.includes('EC')).length;
+                    if (leaderCountInGroup < minLeadersInGroup) {
+                        minLeadersInGroup = leaderCountInGroup;
+                        bestIdx = j;
+                    } else if (leaderCountInGroup === minLeadersInGroup) {
+                        // 如果領導人數一樣，看同小C
+                        if (bestIdx === -1 || (groupCategoryCount[j][person.category] || 0) < (groupCategoryCount[bestIdx][person.category] || 0)) {
+                            bestIdx = j;
+                        }
+                    }
+                }
+
+                if (bestIdx !== -1) {
+                    groups[bestIdx].push(person);
+                    groupCategoryCount[bestIdx][person.category] = (groupCategoryCount[bestIdx][person.category] || 0) + 1;
+                }
+            }
+
+            // 第二輪：分配剩餘成員
+            others.forEach(person => {
+                const bestIdx = findBestGroup(person);
+                if (bestIdx !== -1) {
+                    groups[bestIdx].push(person);
+                    groupCategoryCount[bestIdx][person.category] = (groupCategoryCount[bestIdx][person.category] || 0) + 1;
+                }
+            });
+
+            return groups;
+        }
+
+        function startGacha() {
+            if (isAnimating) return;
+            const rawText = document.getElementById('inputNames').value;
+
+            // 解析輸入：支援 Tab 或空格分隔 (小C 姓名 聘階)
+            let people = [];
+            rawText.split('\n').forEach(line => {
+                line = line.trim();
+                if (!line) return;
+
+                const parts = line.split(/[\t\s]+/);
+                if (parts.length >= 3) {
+                    people.push({
+                        category: parts[0],
+                        name: parts[1],
+                        rank: parts[2].toUpperCase()
+                    });
+                } else if (parts.length === 2) {
+                    people.push({
+                        category: parts[0],
+                        name: parts[1],
+                        rank: 'UFO'
+                    });
+                } else if (parts.length === 1) {
+                    people.push({
+                        category: '未分類',
+                        name: parts[0],
+                        rank: 'UFO'
+                    });
+                }
+            });
+
+            if (people.length < 3) {
+                alert("人數太少，至少需要 3 人！\n請確認格式：小C 姓名 聘階");
+                return;
+            }
+
+            // 檢查是否有 EC 或以上
+            const leaderCount = people.filter(p => p.rank.includes('EC')).length;
+            const totalGroups = Math.ceil(people.length / 3);
+
+            if (leaderCount < totalGroups) {
+                const proceed = confirm(
+                    `⚠️ EC 或以上的人數 (${leaderCount}) 少於組數 (${totalGroups})\n` +
+                    `部分組別將沒有領導者，是否繼續？`
+                );
+                if (!proceed) return;
+            }
+
+            playSound('start');
+
+            isAnimating = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('copyBtn').disabled = true;
+            document.getElementById('resultOutput').innerHTML = '<div class="loading"></div><span style="margin-left:10px;">金幣分配中...</span>';
+            document.getElementById('resultOutput').style.display = 'flex';
+            document.getElementById('resultOutput').style.justifyContent = 'center';
+            document.getElementById('resultOutput').style.alignItems = 'center';
+
+            setupBins(totalGroups);
+
+            const displayNames = people.map(p => p.name);
+            fillPot(displayNames);
+
+            // 使用智能分組
+            const groups = smartGrouping(people, totalGroups);
+
+            // 建立動畫佇列（隨機出球順序）
+            let animQueue = [];
+            groups.forEach((group, gIndex) => {
+                group.forEach(person => {
+                    animQueue.push({
+                        name: person.name,
+                        category: person.category,
+                        rank: person.rank,
+                        groupIndex: gIndex
+                    });
+                });
+            });
+            animQueue = shuffle(animQueue);
+
+            showCountdown(() => {
+                document.getElementById('potBody').classList.remove('mixing');
+                animQueue.forEach((item, i) => {
+                    setTimeout(() => {
+                        ejectCoin(item.name, item.groupIndex);
+                    }, i * 700);
+                });
+                const totalTime = animQueue.length * 700 + 1200;
+                setTimeout(() => {
+                    finalizeResults(groups);
+                }, totalTime);
+            });
+        }
+
+        function setupBins(count) {
+            const container = document.getElementById('binsContainer');
+            container.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const bin = document.createElement('div');
+                bin.className = 'bin';
+                bin.id = `bin-${i}`;
+                const label = document.createElement('div');
+                label.className = 'bin-label';
+                label.innerText = `第 ${i + 1} 組`;
+                bin.appendChild(label);
+                container.appendChild(bin);
+            }
+        }
+
+        function fillPot(names) {
+            const pot = document.getElementById('potBody');
+            pot.innerHTML = '';
+            miniCoins = [];
+            names.forEach((name, i) => {
+                const coin = document.createElement('div');
+                coin.className = 'mini-coin';
+                coin.innerText = name.slice(0, 2);
+                const left = Math.random() * 60 + 20;
+                const top = Math.random() * 50 + 30;
+                coin.style.left = `${left}%`;
+                coin.style.top = `${top}%`;
+                pot.appendChild(coin);
+                miniCoins.push(coin);
+            });
+        }
+
+        function ejectCoin(name, groupIndex) {
+            const stage = document.getElementById('stage');
+            const pot = document.getElementById('potBody');
+            const bin = document.getElementById(`bin-${groupIndex}`);
+
+            if (miniCoins.length > 0) {
+                const coinToRemove = miniCoins.pop();
+                coinToRemove.style.opacity = '0';
+                setTimeout(() => coinToRemove.remove(), 300);
+            }
+
+            const ball = document.createElement('div');
+            ball.className = 'ball';
+            ball.innerText = name;
+            stage.appendChild(ball);
+
+            const stageRect = stage.getBoundingClientRect();
+            const potRect = pot.getBoundingClientRect();
+            const binRect = bin.getBoundingClientRect();
+
+            const startLeft = (potRect.left - stageRect.left) + potRect.width / 2 - 30;
+            const startTop = (potRect.top - stageRect.top) + potRect.height / 2 - 30;
+            const targetLeft = (binRect.left - stageRect.left) + binRect.width / 2 - 30;
+            const targetTop = (binRect.top - stageRect.top) + 30;
+
+            ball.style.left = `${startLeft}px`;
+            ball.style.top = `${startTop}px`;
+
+
+
+            requestAnimationFrame(() => {
+                ball.classList.add('flying');
+                ball.style.left = `${targetLeft}px`;
+                ball.style.top = `${targetTop}px`;
+                playSound('fire');
+            });
+
+            setTimeout(() => {
+                ball.remove();
+                const ballInBin = document.createElement('div');
+                ballInBin.className = 'ball ball-in-bin';
+                ballInBin.innerText = name;
+                bin.appendChild(ballInBin);
+            }, 700);
+        }
+
+        // 煙花效果
+        function createFirework(x, y, container) {
+            const colors = ['#FFD700', '#FF4444', '#FF6B6B', '#FFE55C', '#FFA500'];
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'firework';
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+
+                const angle = (Math.PI * 2 * i) / 20;
+                const velocity = 30 + Math.random() * 40;
+                const dx = Math.cos(angle) * velocity;
+                const dy = Math.sin(angle) * velocity;
+
+                particle.style.transform = `translate(${dx}px, ${dy}px)`;
+                container.appendChild(particle);
+
+                setTimeout(() => particle.remove(), 1000);
+            }
+        }
+
+        function finalizeResults(groups) {
+            playSound('complete');
+
+            // 放煙花
+            const stage = document.getElementById('stage');
+            const stageRect = stage.getBoundingClientRect();
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    createFirework(
+                        Math.random() * stageRect.width,
+                        Math.random() * stageRect.height * 0.5,
+                        stage
+                    );
+                }, i * 200);
+            }
+
+            // 輸出結果：只顯示組別、姓名
+            let resultText = "組別\t姓名\n";
+            groups.forEach((group, gIndex) => {
+                group.forEach(person => {
+                    resultText += `第${gIndex + 1}組\t${person.name}\n`;
+                });
+            });
+
+            const output = document.getElementById('resultOutput');
+            output.style.display = 'block';
+            output.style.justifyContent = 'flex-start';
+            output.style.alignItems = 'flex-start';
+            output.innerText = resultText;
+
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('copyBtn').disabled = false;
+            isAnimating = false;
+
+            document.querySelectorAll('.bin').forEach(bin => {
+                bin.style.animation = 'landBounce 0.5s ease-out';
+            });
+        }
+
+        function copyResult() {
+            const text = document.getElementById('resultOutput').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ 已複製！可貼到 Google Sheet');
+            });
+        }
+    </script>
+</body>
+
+</html>
